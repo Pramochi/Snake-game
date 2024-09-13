@@ -1,234 +1,227 @@
 #include<bits/stdc++.h>
-#include<conio.h> // key press kbhit
+#include<conio.h> 
 #include<windows.h>
 
 using namespace std;
 
 #define MAX_LENGTH 1000
 
-//Directions
-const char DIR_UP = 'U';
-const char DIR_DOWN = 'D';
-const char DIR_LEFT = 'L';
-const char DIR_RIGHT = 'R'; 
+// Directions
+const char MOVE_UP = 'U';
+const char MOVE_DOWN = 'D';
+const char MOVE_LEFT = 'L';
+const char MOVE_RIGHT = 'R'; 
 
-int consoleWidth, consoleHeight;
+int windowWidth, windowHeight;
 
-void initScreen()
+void initConsole()
 {
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(hConsole, &csbi);
-    consoleHeight = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-    consoleWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO screenBufferInfo;
+    GetConsoleScreenBufferInfo(consoleHandle, &screenBufferInfo);
+    windowHeight = screenBufferInfo.srWindow.Bottom - screenBufferInfo.srWindow.Top + 1;
+    windowWidth = screenBufferInfo.srWindow.Right - screenBufferInfo.srWindow.Left + 1;
 }
 
-struct Point{
-    int xCoord;
-    int yCoord;
-    Point(){
+struct Position{
+    int xPos;
+    int yPos;
+    Position(){
     }
-    Point(int x, int y)
+    Position(int x, int y)
     {
-        xCoord = x;
-        yCoord = y;
+        xPos = x;
+        yPos = y;
     }
 };
 
-
-class Snake{ 
-    int length;
-    char direction;
+class SnakeGame{ 
+    int snakeLength;
+    char currentDirection;
 public:
-    Point body[MAX_LENGTH];
-    Snake(int x, int y)
+    Position snakeBody[MAX_LENGTH];
+    SnakeGame(int x, int y)
     {
-       length = 1;
-       body[0] = Point(x,y);
-       direction = DIR_RIGHT;
+       snakeLength = 1;
+       snakeBody[0] = Position(x,y);
+       currentDirection = MOVE_RIGHT;
     }
 
-    int getLength(){
-        return length;
+    int getSnakeLength(){
+        return snakeLength;
     }
 
-    void changeDirection(char newDirection){
-        if(newDirection == DIR_UP && direction != DIR_DOWN)
+    void setDirection(char newDirection){
+        if(newDirection == MOVE_UP && currentDirection != MOVE_DOWN)
         {
-            direction = newDirection;
+            currentDirection = newDirection;
         }
-        else if(newDirection == DIR_DOWN && direction != DIR_UP)
+        else if(newDirection == MOVE_DOWN && currentDirection != MOVE_UP)
         {
-            direction = newDirection;
+            currentDirection = newDirection;
         }
-        else if(newDirection == DIR_LEFT && direction != DIR_RIGHT)
+        else if(newDirection == MOVE_LEFT && currentDirection != MOVE_RIGHT)
         {
-            direction = newDirection;
+            currentDirection = newDirection;
         }
-        else if(newDirection == DIR_RIGHT && direction != DIR_LEFT)
+        else if(newDirection == MOVE_RIGHT && currentDirection != MOVE_LEFT)
         {
-            direction = newDirection;
+            currentDirection = newDirection;
         }
     }
 
-
-    bool move(Point food){
-
-        for(int i= length-1;i>0;i--)  // lenght = 4
+    bool moveSnake(Position foodItem){
+        for(int i= snakeLength-1; i>0; i--)
         {
-            body[i] = body[i-1];
+            snakeBody[i] = snakeBody[i-1];
         }
 
-        switch(direction)
+        switch(currentDirection)
         {
-            int val;
-            case DIR_UP:
-                val = body[0].yCoord;
-                body[0].yCoord = val-1;
+            int value;
+            case MOVE_UP:
+                value = snakeBody[0].yPos;
+                snakeBody[0].yPos = value-1;
                 break;
-            case DIR_DOWN:
-                val = body[0].yCoord;
-                body[0].yCoord = val+1;
+            case MOVE_DOWN:
+                value = snakeBody[0].yPos;
+                snakeBody[0].yPos = value+1;
                 break;
-            case DIR_RIGHT:
-                val = body[0].xCoord;
-                body[0].xCoord = val+1;
+            case MOVE_RIGHT:
+                value = snakeBody[0].xPos;
+                snakeBody[0].xPos = value+1;
                 break;
-            case DIR_LEFT:
-                val = body[0].xCoord;
-                body[0].xCoord = val-1;
+            case MOVE_LEFT:
+                value = snakeBody[0].xPos;
+                snakeBody[0].xPos = value-1;
                 break;
-
         }
 
-        //snake bites itself
-        for(int i=1;i<length;i++)
+        // Self-collision check
+        for(int i=1; i<snakeLength; i++)
         {
-            if(body[0].xCoord == body[i].xCoord && body[0].yCoord == body[i].yCoord)
+            if(snakeBody[0].xPos == snakeBody[i].xPos && snakeBody[0].yPos == snakeBody[i].yPos)
             {
                 return false;
             }
         }
 
-        //snake eats food
-        if(food.xCoord == body[0].xCoord && food.yCoord == body[0].yCoord)
+        // Check if snake eats food
+        if(foodItem.xPos == snakeBody[0].xPos && foodItem.yPos == snakeBody[0].yPos)
         {
-            body[length] = Point(body[length-1].xCoord, body[length-1].yCoord);
-            length++;
+            snakeBody[snakeLength] = Position(snakeBody[snakeLength-1].xPos, snakeBody[snakeLength-1].yPos);
+            snakeLength++;
         }
 
         return true;
-
     }
 };
 
-
-class Board{
-    Snake *snake;
-    const char SNAKE_BODY = 'O';
-    Point food;
-    const char FOOD = 'o';
-    int score;
+class GameBoard{
+    SnakeGame *snake;
+    const char SNAKE_PART = 'O';
+    Position foodItem;
+    const char FOOD_ITEM = 'o';
+    int playerScore;
 public:
-    Board(){
-        spawnFood();
-        snake = new Snake(10,10);
-        score = 0;
+    GameBoard(){
+        spawnFoodItem();
+        snake = new SnakeGame(10,10);
+        playerScore = 0;
     }
 
-    ~Board(){
+    ~GameBoard(){
         delete snake;
     }
 
-    int getScore(){
-        return score;
+    int getPlayerScore(){
+        return playerScore;
     }
 
-    void spawnFood(){
-        int x = rand() % consoleWidth;
-        int y = rand() % consoleHeight;
-        food = Point(x, y);
+    void spawnFoodItem(){
+        int x = rand() % windowWidth;
+        int y = rand() % windowHeight;
+        foodItem = Position(x, y);
     }
 
-    void displayCurrentScore(){
-        gotoxy(consoleWidth/2,0);
-        cout<<"Current Score : "<< score;
+    void showScore(){
+        moveToPosition(windowWidth/2, 0);
+        cout << "Current Score : " << playerScore;
     }
 
-    void gotoxy(int x, int y)
+    void moveToPosition(int x, int y)
     {
-        COORD coord;
-        coord.X = x;
-        coord.Y = y;
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),coord);
+        COORD cursorPos;
+        cursorPos.X = x;
+        cursorPos.Y = y;
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cursorPos);
     }
 
-    void draw(){
+    void renderBoard(){
         system("cls");
-        for(int i=0;i<snake->getLength();i++)
+        for(int i=0; i<snake->getSnakeLength(); i++)
         {
-            gotoxy(snake->body[i].xCoord, snake->body[i].yCoord);
-            cout<<SNAKE_BODY;
+            moveToPosition(snake->snakeBody[i].xPos, snake->snakeBody[i].yPos);
+            cout << SNAKE_PART;
         }
 
-        gotoxy(food.xCoord, food.yCoord);
-        cout<<FOOD;
+        moveToPosition(foodItem.xPos, foodItem.yPos);
+        cout << FOOD_ITEM;
 
-        displayCurrentScore();
+        showScore();
     }
 
-    bool update(){
-       bool isAlive = snake->move(food);
-       if(isAlive == false)
-       {
-           return false;
-       }
-
-        if(food.xCoord == snake->body[0].xCoord && food.yCoord == snake->body[0].yCoord)
+    bool updateBoard(){
+        bool alive = snake->moveSnake(foodItem);
+        if(!alive)
         {
-            score++;
-            spawnFood();
+            return false;
         }
-       return true;
+
+        if(foodItem.xPos == snake->snakeBody[0].xPos && foodItem.yPos == snake->snakeBody[0].yPos)
+        {
+            playerScore++;
+            spawnFoodItem();
+        }
+        return true;
     }
 
-    void getInput(){
+    void getPlayerInput(){
         if(kbhit())
         {
             int key = getch();
             if(key == 'w' || key == 'W')
             {
-                snake->changeDirection(DIR_UP);
+                snake->setDirection(MOVE_UP);
             }
             else if(key == 'a' || key == 'A')
             {
-                snake->changeDirection(DIR_LEFT);
+                snake->setDirection(MOVE_LEFT);
             }
             else if(key == 's' || key == 'S')
             {
-                snake->changeDirection(DIR_DOWN);
+                snake->setDirection(MOVE_DOWN);
             }
             else if(key == 'd' || key == 'D')
             {
-                snake->changeDirection(DIR_RIGHT);
+                snake->setDirection(MOVE_RIGHT);
             }
         }
     }
-
 };
 
 int main(){
     srand(time(0));
-    initScreen();
-    Board *board = new Board();
-    while(board->update())
+    initConsole();
+    GameBoard *gameBoard = new GameBoard();
+    while(gameBoard->updateBoard())
     {
-        board->getInput();
-        board->draw();
+        gameBoard->getPlayerInput();
+        gameBoard->renderBoard();
         Sleep(100);
     }
 
-    cout<<"Game over"<<endl;
-    cout<<"Final score is :"<<board->getScore();
+    cout << "Game over" << endl;
+    cout << "Final score is :" << gameBoard->getPlayerScore();
     return 0;
 }
